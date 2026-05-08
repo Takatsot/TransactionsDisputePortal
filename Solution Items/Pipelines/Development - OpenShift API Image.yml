@@ -1,0 +1,164 @@
+name: ${{ parameters.Workload_Type }}-$(Date:yy).$(Date:MM).$(Date:dd)$(Rev:rr)
+
+trigger: none
+
+pool:
+  name: 'VSTS Build 01'
+
+resources:
+  repositories:
+  - repository: Templates
+    type: git
+    name: da/pipelinetemplates
+
+#=========================================================================
+# PARAMETERS 
+#=========================================================================
+parameters:
+
+- name: Workload_Type
+  default: api
+  values:
+  - api
+  - scheduler
+  - integration
+
+#=========================================================================
+# VARIABLES 
+#=========================================================================
+
+variables:
+
+- group: Deployment Variables
+- group: lib-config-transactionsdisputeportal
+
+- name: ApplicationName
+  value: 'transactionsdisputeportal' # Must be lowercase
+- name: AppNamespace
+  value: 'transactionsdisputeportal' # Must be lowercase
+- name: Group
+  value: 'TransactionsDisputePortal'
+- name: ImageName
+  value: 'dev-transactionsdisputeportal' # Must be lowercase
+- name: buildConfiguration
+  value: 'Release'
+- name: ProjectFolder
+  value: 'TransactionsDisputePortal.Api'
+- name: SQLExpress
+  value: 'mssql-dev-transactionsdisputeportal-dev'
+
+#=========================================================================
+# VARIABLES - PODS CONFIG
+#=========================================================================
+
+- name: Labels
+  value: ',team=$(System.TeamProject)'
+- name: Team
+  value: '$(System.TeamProject)'
+- name: OpenShiftEnvironment
+  value: 'dev'
+- name: ASPNETCORE_ENVIRONMENT
+  value: 'Development'
+- name: Route_Alias
+  value: 'ocpdev'
+- name: Route_Direct
+  value: ocp1
+
+- ${{ if eq(parameters.Workload_Type, 'api') }}:
+  - name: CPURequest
+    value: 40m
+  - name: CPULimit
+    value: 120m
+  - name: MemoryRequest
+    value: 100Mi
+  - name: MemoryLimit
+    value: 400Mi
+  - name: Replicas
+    value: 2
+  
+- ${{ if eq(parameters.Workload_Type, 'scheduler') }}:
+  - name: CPURequest
+    value: 40m
+  - name: CPULimit
+    value: 120m
+  - name: MemoryRequest
+    value: 100Mi
+  - name: MemoryLimit
+    value: 400Mi
+  - name: Replicas
+    value: 2
+
+- ${{ if eq(parameters.Workload_Type, 'integration') }}:
+  - name: CPURequest
+    value: 40m
+  - name: CPULimit
+    value: 120m
+  - name: MemoryRequest
+    value: 100Mi
+  - name: MemoryLimit
+    value: 400Mi
+  - name: Replicas
+    value: 2
+
+stages:
+
+#=========================================================================
+# PREPARE Stage
+#=========================================================================
+- stage: Prepare
+  condition: succeededOrFailed()
+    
+  jobs:
+    - template: Prepare/gitversion_prepare.yml@Templates
+      parameters:
+        environment: Production
+        GitVersionFile: ${{ parameters.Workload_Type }}-GitVersion.yml
+
+#=========================================================================
+# BUILD STAGE
+#=========================================================================
+- stage: Build_Image
+  dependsOn: Prepare
+  jobs:
+  - template: Build/Build_Image.yml@Templates
+    parameters:
+        ImageName: $(ImageName)                   
+        Workload_Type: ${{ parameters.Workload_Type }}
+        AppNamespace: $(AppNamespace)
+        buildConfiguration: $(buildConfiguration)
+        ArtifactsLocation: $(ArtifactsLocation)
+        ArtifactsAccessToken: $(ArtifactsAccessToken)
+        ProjectFolder: $(ProjectFolder)
+
+#=========================================================================
+# DEPLOY STAGE
+#=========================================================================
+- stage: Deploy_Image
+#=========================================================================
+# Job Template Deploy Development 
+#=========================================================================
+  jobs:
+    - template: Deploy/Deploy_Image.yml@Templates
+      
+      parameters:
+          Team: $(Team)
+          Workload_Type: ${{ parameters.Workload_Type }}
+          Pool: 'VSTS Release 01'
+          Environment: 'OpenShift Development'
+          OpenShiftEnvironment: $(OpenShiftEnvironment)  
+          ASPNETCORE_ENVIRONMENT: $(ASPNETCORE_ENVIRONMENT)
+          AppNamespace: $(AppNamespace) 
+          ApplicationName: $(ApplicationName)
+          Group: $(Group)
+          SQLExpress: $(SQLExpress)  
+          ImageName: $(ImageName)
+          VaultName: $(lib-VaultName)
+          VaultSecret: $(lib-DevVaultSecret)
+          Labels: $(Labels)
+          Replicas: $(Replicas)
+          CPULimit: $(CPULimit)
+          CPURequest: $(CPURequest)
+          MemoryRequest: $(MemoryRequest)
+          MemoryLimit: $(MemoryLimit)
+          Route_Alias:  $(Route_Alias)
+          Route_Direct:  $(Route_Direct)

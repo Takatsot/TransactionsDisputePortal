@@ -1,0 +1,130 @@
+name: $(Date:yy).$(Date:MM).$(Date:dd)$(Rev:rr)
+
+trigger: none
+
+resources:
+  repositories:
+  - repository: Templates
+    type: git
+    name: da/pipelinetemplates
+
+#=========================================================================
+# VARIABLES 
+#=========================================================================
+
+variables:
+
+- group: lib-config-transactionsdisputeportal
+
+- name: ApplicationName
+  value: 'transactionsdisputeportalredis' # Must be lowercase
+- name: AppNamespace
+  value: 'transactionsdisputeportal' # Must be lowercase
+- name: Group
+  value: 'TransactionsDisputePortal'
+- name: Labels
+  value: ',team=$(System.TeamProject)'
+- name: Team
+  value: $(System.TeamProject)
+
+#=========================================================================
+# DEPLOY TEST REDIS
+#=========================================================================
+stages:
+- stage: Deploy_Test_Redis
+  displayName: Release Test Redis 
+#=========================================================================
+# Job Template Deploy Development 
+#=========================================================================
+  
+  variables:
+    
+    OpenShiftEnvironment: 'tst'    
+    CPULimit: 120m    
+    CPURequest: 40m   
+    MemoryRequest: 100Mi
+    MemoryLimit: 400Mi
+
+  jobs:
+  - template: Deploy/Deploy_Redis.yml@Templates
+    parameters:
+        Team: $(Team)
+        Environment: 'OpenShift Test'
+        OpenShiftEnvironment: $(OpenShiftEnvironment) 
+        AppNamespace: $(AppNamespace) 
+        ApplicationName: $(ApplicationName)
+        Group: $(Group)
+        RedisPassword: $(lib-RedisPassword)
+        CPULimit: $(CPULimit)
+        CPURequest: $(CPURequest) 
+        MemoryRequest: $(MemoryRequest)
+        MemoryLimit: $(MemoryLimit) 
+        OpenshiftService: 'OpenShift'
+
+#=========================================================================
+# DEPLOY PRODUCTION REDIS
+#=========================================================================
+- stage: Deploy_Prod_Redis
+  displayName: Deploy Production Redis 
+  trigger: manual
+#=========================================================================
+# Job Template Deploy Development 
+#=========================================================================
+  
+  variables:
+    
+    OpenShiftEnvironment: 'prd'    
+    CPULimit: 120m    
+    CPURequest: 40m   
+    MemoryRequest: 100Mi
+    MemoryLimit: 400Mi
+
+  jobs:
+  - template: Deploy/Deploy_Redis.yml@Templates
+    parameters:
+        Team: $(Team)
+        Environment: 'OpenShift Production'
+        OpenShiftEnvironment: $(OpenShiftEnvironment)
+        AppNamespace: $(AppNamespace) 
+        ApplicationName: $(ApplicationName)
+        Group: $(Group)
+        RedisPassword: $(lib-RedisPassword)
+        CPULimit: $(CPULimit)
+        CPURequest: $(CPURequest)
+        MemoryRequest: $(MemoryRequest)
+        MemoryLimit: $(MemoryLimit)
+        OpenshiftService: 'OpenShift-Production'
+
+#=========================================================================
+# DEPLOY PRODUCTION REDIS
+#=========================================================================
+- stage: Deploy_Prod_DR_Redis
+  displayName: Deploy Production DR Redis 
+  dependsOn: Deploy_Prod_Redis
+#=========================================================================
+# Job Template Deploy Development 
+#=========================================================================
+  
+  variables:
+    
+    OpenShiftEnvironment: 'prd'    
+    CPULimit: 120m    
+    CPURequest: 40m   
+    MemoryRequest: 100Mi
+    MemoryLimit: 400Mi
+  
+  jobs:
+  - template: Deploy/Deploy_Redis.yml@Templates
+    parameters:
+        Team: $(Team)
+        Environment: 'OpenShift-DR Production'
+        OpenShiftEnvironment: $(OpenShiftEnvironment)
+        AppNamespace: $(AppNamespace) 
+        ApplicationName: $(ApplicationName)
+        Group: $(Group)
+        RedisPassword: $(lib-RedisPassword)
+        CPULimit: $(CPULimit)
+        CPURequest: $(CPURequest)
+        MemoryRequest: $(MemoryRequest)
+        MemoryLimit: $(MemoryLimit)
+        OpenshiftService: 'OpenShift-Production-DR'

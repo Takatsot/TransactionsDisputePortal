@@ -1,0 +1,83 @@
+name: $(Date:yy).$(Date:MM).$(Date:dd)$(Rev:rr)
+
+trigger: none
+
+pool:
+  name: 'VSTS Release 01'
+
+resources:
+  pipelines:
+  - pipeline: development # Name of the pipeline resource.
+    source: 'TransactionsDisputePortal Development CI' # The name of the pipeline referenced by this pipeline resource.
+    trigger: true # Run pipeline when any run of completes
+
+  repositories:
+  - repository: Templates
+    type: git
+    name: da/pipelinetemplates
+
+#=========================================================================
+# VARIABLES 
+#=========================================================================
+
+variables:
+
+- group: lib-config-transactionsdisputeportal
+
+- name: ApplicationName
+  value: 'transactionsdisputeportal' # Must be lowercase
+- name: AppNamespace
+  value: 'transactionsdisputeportal' # Must be lowercase
+- name: Group
+  value: 'TransactionsDisputePortal'
+- name: Database 
+  value:  'TransactionsDisputePortal'
+- name: SQLName 
+  value:  'transactionsdisputeportal'
+- name: SQLCreateDB 
+  value: 'CreateDatabase.sql'
+- name: SQLScriptPRE 
+  value: 'ConfigDatabasePRE.sql'
+- name: SQLMigration 
+  value: 'Migration.sql'
+- name: SQLScriptPOST 
+  value: 'ConfigDatabasePOST.sql'
+- name: OpenShiftEnvironment 
+  value: 'dev'
+- name: BuildNumber
+  value: $(resources.pipeline.development.runName)
+
+#=========================================================================
+# DEPLOY STAGE
+#=========================================================================
+stages:
+- stage: Deploy_Database  
+  
+  variables:
+    
+    InstanceSize: 12Gi    
+    MemoryRequest: 1Gi   
+    MemoryLimit: 3Gi
+
+  jobs:
+  - template: Deploy/Deploy_Database_SQLExpress.yml@Templates
+    parameters:
+        Team: $(Team)
+        Environment: 'OpenShift Development'
+        OpenShiftEnvironment: $(OpenShiftEnvironment)
+        AppNamespace: $(AppNamespace) 
+        ApplicationName: $(ApplicationName)
+        Group: $(Group)
+        BuildNumber: $(BuildNumber)
+        SQLName: $(SQLName)
+        Database: $(Database)
+        ExpressPassword: $(lib-ExpressPassword)
+        InstanceSize: $(InstanceSize)
+        MemoryRequest: $(MemoryRequest)
+        MemoryLimit: $(MemoryLimit)
+        SQLCreateDB: $(SQLCreateDB)
+        SQLScriptPRE: $(SQLScriptPRE)
+        SQLMigration: $(SQLMigration)
+        SQLScriptPOST: $(SQLScriptPOST)
+        DependsOn:
+        OpenshiftService: 'OpenShift'
