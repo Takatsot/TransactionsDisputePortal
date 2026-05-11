@@ -161,8 +161,8 @@ The API exposes health check endpoints for monitoring:
 | Endpoint | Purpose | Status Codes |
 |----------|---------|--------------|
 | `/health` | Overall system health | 200 (Healthy), 503 (Unhealthy) |
-| `/health/ready` | Readiness probe (K8s) | 200 (Ready), 503 (Not Ready) |
-| `/health/live` | Liveness probe (K8s) | 200 (Alive) |
+| `/Isready` | Readiness probe (K8s) | 200 (Ready), 503 (Not Ready) |
+| `/Islive` | Liveness probe (K8s) | 200 (Alive) |
 
 Health checks monitor:
 - ✅ Database connectivity (SQL Server)
