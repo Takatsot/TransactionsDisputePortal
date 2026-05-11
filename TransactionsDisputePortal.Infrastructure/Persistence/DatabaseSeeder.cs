@@ -41,8 +41,8 @@ namespace TransactionsDisputePortal.Infrastructure.Persistence
             var customer2 = Customer.Create(
                 "testuser2@email.com",
                 defaultPasswordHash,
-                "Jane",
-                "Smith",
+                "Sifiso",
+                "Ndaba",
                 "DatabaseSeeder");
 
             context.Customers.AddRange(customer1, customer2);

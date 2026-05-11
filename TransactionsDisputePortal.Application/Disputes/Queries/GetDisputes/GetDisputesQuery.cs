@@ -8,6 +8,7 @@ using Intent.RoslynWeaver.Attributes;
 using MediatR;
 using TransactionsDisputePortal.Application.Common.Models;
 using TransactionsDisputePortal.Application.Common.Pagination;
+using TransactionsDisputePortal.Application.Common.Services;
 using TransactionsDisputePortal.Domain.Entities;
 using TransactionsDisputePortal.Domain.Repositories;
 
@@ -32,11 +33,16 @@ namespace TransactionsDisputePortal.Application.Disputes.Queries.GetDisputes
     {
         private readonly IDisputeRepository _disputeRepository;
         private readonly IMapper _mapper;
+        private readonly ILookupService _lookupService;
 
-        public GetDisputesQueryHandler(IDisputeRepository disputeRepository, IMapper mapper)
+        public GetDisputesQueryHandler(
+            IDisputeRepository disputeRepository, 
+            IMapper mapper,
+            ILookupService lookupService)
         {
             _disputeRepository = disputeRepository ?? throw new ArgumentNullException(nameof(disputeRepository));
             _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
+            _lookupService = lookupService ?? throw new ArgumentNullException(nameof(lookupService));
         }
 
         public async Task<PagedResult<DisputeDto>> Handle(GetDisputesQuery request, CancellationToken cancellationToken)
@@ -53,7 +59,7 @@ namespace TransactionsDisputePortal.Application.Disputes.Queries.GetDisputes
                 }
             }
 
-            // Build query options for sorting and including related entities
+            // Build query options for sorting
             Func<IQueryable<Dispute>, IQueryable<Dispute>> queryOptions = query =>
             {
                 // Apply sorting
@@ -75,13 +81,27 @@ namespace TransactionsDisputePortal.Application.Disputes.Queries.GetDisputes
                 request.PageSize,
                 queryOptions,
                 cancellationToken);
+            
+            // Set descriptions from lookup tables
+            var disputes = pagedDisputes.ToList();
+            foreach (var dispute in disputes)
+            {
+                if (Enum.TryParse<DisputeReason>(dispute.Reason, out var reason))
+                {
+                    dispute.ReasonDescription = _lookupService.GetDisputeReasonDescription(reason);
+                }
+                if (Enum.TryParse<DisputeStatus>(dispute.Status, out var status))
+                {
+                    dispute.StatusDescription = _lookupService.GetDisputeStatusDescription(status);
+                }
+            }
 
             return PagedResult<DisputeDto>.Create(
                 pagedDisputes.TotalCount,
                 pagedDisputes.PageCount,
                 pagedDisputes.PageSize,
                 pagedDisputes.PageNo,
-                pagedDisputes.ToList());
+                disputes);
         }
     }
 }

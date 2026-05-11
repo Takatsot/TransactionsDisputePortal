@@ -1,0 +1,253 @@
+# ============================================================================
+# TransactionsDisputePortal - UI Docker Image Pipeline
+# ============================================================================
+# Purpose: Build and deploy UI Docker image to selected environment
+# Trigger: Manual only
+# Environments: development, test, production
+# ============================================================================
+
+name: UI-Image-$(Date:yy).$(Date:MM).$(Date:dd)$(Rev:rr)
+
+trigger: none  # Manual trigger only
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+# ============================================================================
+# Parameters - Select deployment environment
+# ============================================================================
+parameters:
+- name: Environment
+  displayName: 'Deploy to Environment'
+  type: string
+  default: development
+  values:
+  - development
+  - test
+  - production
+
+variables:
+  # Variable groups from Azure DevOps Library
+  - group: 'Deployment Variables'
+  - group: 'lib-config-transactionsdisputeportal'
+
+  # Application settings
+  - name: appName
+    value: 'transactionsdisputeportal'
+  - name: dockerfilePath
+    value: '$(Build.SourcesDirectory)/TransactionsDisputePortal.UI/Dockerfile'
+  - name: buildContext
+    value: '$(Build.SourcesDirectory)/TransactionsDisputePortal.UI'
+  - name: buildId
+    value: '$(Build.BuildId)'
+
+  # ============================================================================
+  # Environment-specific configuration
+  # ============================================================================
+  
+  # Development environment
+  - ${{ if eq(parameters.Environment, 'development') }}:
+    - name: imageName
+      value: 'dev-transactionsdisputeportal-ui'
+    - name: apiUrl
+      value: '$(VITE_API_URL_DEV)'
+    - name: namespace
+      value: 'transactionsdisputeportal-dev'
+    - name: k8sConnection
+      value: 'k8s-dev'
+    - name: environment
+      value: 'Development-OpenShift'
+    - name: replicas
+      value: '2'
+    - name: cpuRequest
+      value: '50m'
+    - name: cpuLimit
+      value: '200m'
+    - name: memoryRequest
+      value: '64Mi'
+    - name: memoryLimit
+      value: '256Mi'
+
+  # Test environment
+  - ${{ if eq(parameters.Environment, 'test') }}:
+    - name: imageName
+      value: 'tst-transactionsdisputeportal-ui'
+    - name: apiUrl
+      value: '$(VITE_API_URL_TST)'
+    - name: namespace
+      value: 'transactionsdisputeportal-tst'
+    - name: k8sConnection
+      value: 'k8s-test'
+    - name: environment
+      value: 'Test-OpenShift'
+    - name: replicas
+      value: '2'
+    - name: cpuRequest
+      value: '100m'
+    - name: cpuLimit
+      value: '250m'
+    - name: memoryRequest
+      value: '128Mi'
+    - name: memoryLimit
+      value: '512Mi'
+
+  # Production environment
+  - ${{ if eq(parameters.Environment, 'production') }}:
+    - name: imageName
+      value: 'transactionsdisputeportal-ui'
+    - name: apiUrl
+      value: '$(VITE_API_URL_PROD)'
+    - name: namespace
+      value: 'transactionsdisputeportal-prd'
+    - name: k8sConnection
+      value: 'k8s-production'
+    - name: environment
+      value: 'Production-OpenShift'
+    - name: replicas
+      value: '3'
+    - name: cpuRequest
+      value: '100m'
+    - name: cpuLimit
+      value: '250m'
+    - name: memoryRequest
+      value: '128Mi'
+    - name: memoryLimit
+      value: '512Mi'
+
+stages:
+# ============================================================================
+# Stage 1: Prepare
+# ============================================================================
+- stage: Prepare
+  displayName: 'Prepare'
+  jobs:
+  - job: PrepareVersion
+    displayName: 'Prepare Version'
+    steps:
+    - checkout: self
+      displayName: 'Checkout code'
+    
+    # Optional: Use GitVersion for semantic versioning
+    - task: gitversion/setup@0
+      displayName: 'Install GitVersion'
+      inputs:
+        versionSpec: '5.x'
+      continueOnError: true
+    
+    - task: gitversion/execute@0
+      displayName: 'Calculate version'
+      inputs:
+        useConfigFile: true
+        configFilePath: 'GitVersion.yml'
+      continueOnError: true
+
+# ============================================================================
+# Stage 2: Build Docker Image
+# ============================================================================
+- stage: BuildImage
+  displayName: 'Build Image'
+  dependsOn: Prepare
+  jobs:
+  - job: BuildAndPush
+    displayName: 'Build & Push Image'
+    steps:
+    # Build Docker image with API URL
+    - task: Docker@2
+      displayName: 'Build image'
+      inputs:
+        command: 'build'
+        repository: $(imageName)
+        dockerfile: $(dockerfilePath)
+        buildContext: '$(buildContext)'
+        tags: |
+          $(buildId)
+          latest
+        arguments: '--build-arg VITE_API_URL=$(apiUrl)'
+    
+    # Push to container registry
+    - task: Docker@2
+      displayName: 'Push image'
+      inputs:
+        command: 'push'
+        repository: $(imageName)
+        containerRegistry: '$(dockerRegistryServiceConnection)'
+        tags: |
+          $(buildId)
+          latest
+    
+    # Security scan (optional, may require additional configuration)
+    - task: Docker@2
+      displayName: 'Scan for vulnerabilities'
+      inputs:
+        command: 'scan'
+        arguments: '$(imageName):$(buildId)'
+      continueOnError: true
+
+# ============================================================================
+# Stage 3: Deploy to Environment
+# ============================================================================
+- stage: Deploy
+  displayName: 'Deploy to ${{ parameters.Environment }}'
+  dependsOn: BuildImage
+  jobs:
+  - deployment: DeployUI
+    displayName: 'Deploy UI Container'
+    pool:
+      vmImage: 'ubuntu-latest'
+    environment: '$(environment)'
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          # Backup current deployment (production only)
+          - task: Kubernetes@1
+            displayName: 'Backup deployment'
+            inputs:
+              connectionType: 'Kubernetes Service Connection'
+              kubernetesServiceEndpoint: '$(k8sConnection)'
+              namespace: '$(namespace)'
+              command: 'get'
+              arguments: 'deployment/$(appName)-ui -o yaml > $(Pipeline.Workspace)/backup.yaml'
+            continueOnError: true
+            condition: eq('${{ parameters.Environment }}', 'production')
+          
+          # Update deployment with new image
+          - task: Kubernetes@1
+            displayName: 'Update deployment'
+            inputs:
+              connectionType: 'Kubernetes Service Connection'
+              kubernetesServiceEndpoint: '$(k8sConnection)'
+              namespace: '$(namespace)'
+              command: 'set'
+              arguments: 'image deployment/$(appName)-ui ui=$(imageName):$(buildId)'
+          
+          # Wait for rollout to complete
+          - task: Kubernetes@1
+            displayName: 'Verify rollout'
+            inputs:
+              connectionType: 'Kubernetes Service Connection'
+              kubernetesServiceEndpoint: '$(k8sConnection)'
+              namespace: '$(namespace)'
+              command: 'rollout'
+              arguments: 'status deployment/$(appName)-ui --timeout=10m'
+          
+          # Scale to desired replicas
+          - task: Kubernetes@1
+            displayName: 'Scale deployment'
+            inputs:
+              connectionType: 'Kubernetes Service Connection'
+              kubernetesServiceEndpoint: '$(k8sConnection)'
+              namespace: '$(namespace)'
+              command: 'scale'
+              arguments: 'deployment/$(appName)-ui --replicas=$(replicas)'
+          
+          # Check pod status
+          - task: Kubernetes@1
+            displayName: 'Get pod status'
+            inputs:
+              connectionType: 'Kubernetes Service Connection'
+              kubernetesServiceEndpoint: '$(k8sConnection)'
+              namespace: '$(namespace)'
+              command: 'get'
+              arguments: 'pods -l app=$(appName)-ui'
+
