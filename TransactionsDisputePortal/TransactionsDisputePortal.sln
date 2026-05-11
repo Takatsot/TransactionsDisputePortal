@@ -1,0 +1,93 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 18
+VisualStudioVersion = 18.4.11519.219
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "1 - Presentation", "1 - Presentation", "{C7CA16B3-A4E0-49B8-A3BA-7D63C68FC1BF}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TransactionsDisputePortal.Api", "TransactionsDisputePortal.Api\TransactionsDisputePortal.Api.csproj", "{4C798754-869E-4E77-8F93-09E01B7AF874}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "TransactionsDisputePortal.UI", "TransactionsDisputePortal.UI", "{D9F5A3B7-1E8C-4D2F-9B6E-7A8F2C4E5D1B}"
+	ProjectSection(SolutionItems) = preProject
+		..\TransactionsDisputePortal.UI\package.json = ..\TransactionsDisputePortal.UI\package.json
+		..\TransactionsDisputePortal.UI\vite.config.ts = ..\TransactionsDisputePortal.UI\vite.config.ts
+		..\TransactionsDisputePortal.UI\tsconfig.json = ..\TransactionsDisputePortal.UI\tsconfig.json
+		..\TransactionsDisputePortal.UI\index.html = ..\TransactionsDisputePortal.UI\index.html
+		..\TransactionsDisputePortal.UI\Dockerfile = ..\TransactionsDisputePortal.UI\Dockerfile
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "2 - Application", "2 - Application", "{CE7C8FB7-E594-4DFE-BBA7-264BC43D73CC}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TransactionsDisputePortal.Application", "TransactionsDisputePortal.Application\TransactionsDisputePortal.Application.csproj", "{C5C2E092-C2CB-400C-B198-A0B4FD0B49EC}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "3 - Domain", "3 - Domain", "{A7789A5B-6DE5-49E3-B905-72B7A97E0339}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TransactionsDisputePortal.Domain", "TransactionsDisputePortal.Domain\TransactionsDisputePortal.Domain.csproj", "{0075B837-7DCC-4384-8029-59592859DB0B}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "4 - Infrastructure", "4 - Infrastructure", "{0424D5C4-47BA-4F6A-AFD1-8FE93D4B707E}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TransactionsDisputePortal.Infrastructure", "TransactionsDisputePortal.Infrastructure\TransactionsDisputePortal.Infrastructure.csproj", "{5A14DE44-A4B4-493C-85F8-FF4502A275E5}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TransactionsDisputePortal.Domain.Tests", "TransactionsDisputePortal.Domain.Tests\TransactionsDisputePortal.Domain.Tests.csproj", "{8144CD30-BCEB-A29F-5C5D-409318815463}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{B8E7F4A2-5D3C-4E1B-9A7F-2C6D8E9F1A3B}"
+	ProjectSection(SolutionItems) = preProject
+		..\BASE_ENTITY_IMPLEMENTATION.md = ..\BASE_ENTITY_IMPLEMENTATION.md
+		..\CI_CD_PIPELINES.md = ..\CI_CD_PIPELINES.md
+		..\docker-compose.yml = ..\docker-compose.yml
+		..\Dockerfile = ..\Dockerfile
+		..\DOCKER.md = ..\DOCKER.md
+		..\PLANNING_DOCUMENT.md = ..\PLANNING_DOCUMENT.md
+		..\QUICKSTART.md = ..\QUICKSTART.md
+		..\RANCHER_DESKTOP_DEPLOYMENT.md = ..\RANCHER_DESKTOP_DEPLOYMENT.md
+		..\README.md = ..\README.md
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Pipelines", "Pipelines", "{F3A8B5C6-7E2D-4F9C-8B1E-3D7F9A2C5E4B}"
+	ProjectSection(SolutionItems) = preProject
+		Solution Items\Pipelines\API Image.yml = Solution Items\Pipelines\API Image.yml
+		Solution Items\Pipelines\CI.yml = Solution Items\Pipelines\CI.yml
+		Solution Items\Pipelines\UI Image.yml = Solution Items\Pipelines\UI Image.yml
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{4C798754-869E-4E77-8F93-09E01B7AF874}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4C798754-869E-4E77-8F93-09E01B7AF874}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4C798754-869E-4E77-8F93-09E01B7AF874}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4C798754-869E-4E77-8F93-09E01B7AF874}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C5C2E092-C2CB-400C-B198-A0B4FD0B49EC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C5C2E092-C2CB-400C-B198-A0B4FD0B49EC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C5C2E092-C2CB-400C-B198-A0B4FD0B49EC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C5C2E092-C2CB-400C-B198-A0B4FD0B49EC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0075B837-7DCC-4384-8029-59592859DB0B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0075B837-7DCC-4384-8029-59592859DB0B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0075B837-7DCC-4384-8029-59592859DB0B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0075B837-7DCC-4384-8029-59592859DB0B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5A14DE44-A4B4-493C-85F8-FF4502A275E5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5A14DE44-A4B4-493C-85F8-FF4502A275E5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5A14DE44-A4B4-493C-85F8-FF4502A275E5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5A14DE44-A4B4-493C-85F8-FF4502A275E5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8144CD30-BCEB-A29F-5C5D-409318815463}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8144CD30-BCEB-A29F-5C5D-409318815463}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8144CD30-BCEB-A29F-5C5D-409318815463}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8144CD30-BCEB-A29F-5C5D-409318815463}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{4C798754-869E-4E77-8F93-09E01B7AF874} = {C7CA16B3-A4E0-49B8-A3BA-7D63C68FC1BF}
+		{C5C2E092-C2CB-400C-B198-A0B4FD0B49EC} = {CE7C8FB7-E594-4DFE-BBA7-264BC43D73CC}
+		{0075B837-7DCC-4384-8029-59592859DB0B} = {A7789A5B-6DE5-49E3-B905-72B7A97E0339}
+		{5A14DE44-A4B4-493C-85F8-FF4502A275E5} = {0424D5C4-47BA-4F6A-AFD1-8FE93D4B707E}
+		{D9F5A3B7-1E8C-4D2F-9B6E-7A8F2C4E5D1B} = {C7CA16B3-A4E0-49B8-A3BA-7D63C68FC1BF}
+		{F3A8B5C6-7E2D-4F9C-8B1E-3D7F9A2C5E4B} = {B8E7F4A2-5D3C-4E1B-9A7F-2C6D8E9F1A3B}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {A7969AF4-2C16-4C4C-867E-8868AE0A6D47}
+	EndGlobalSection
+EndGlobal

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<outputFiles>
+  <files>
+    <file relativePath="Solution Items/Database/ConfigDatabasePOST.sql" state="ignored;once-off-generated" />
+    <file relativePath="Solution Items/Database/ConfigDatabasePRE.sql" state="ignored;once-off-generated" />
+    <file relativePath="Solution Items/Database/CreateDatabase.sql" state="ignored;once-off-generated" />
+    <file relativePath="Solution Items/Database/SQLServerConfiguration-prd.ps1" state="ignored;once-off-generated" />
+    <file relativePath="Solution Items/Database/SQLServerConfiguration.ps1" state="ignored;once-off-generated" />
+    <file relativePath="Solution Items/intent.repositories.config" state="ignored;once-off-generated" />
+    <file relativePath="Solution Items/Pipelines/Development - OpenShift API Image.yml" state="ignored;once-off-generated" />
+    <file relativePath="Solution Items/Pipelines/Development - Redis.yml" state="ignored;once-off-generated" />
+    <file relativePath="Solution Items/Pipelines/Development - SQL Express.yml" state="ignored;once-off-generated" />
+    <file relativePath="Solution Items/Pipelines/Development - SQL Server.yml" state="ignored;once-off-generated" />
+    <file relativePath="Solution Items/Pipelines/Development CI.yml" state="ignored;once-off-generated" />
+    <file relativePath="Solution Items/Pipelines/Main - OpenShift API Image.yml" state="ignored;once-off-generated" />
+    <file relativePath="Solution Items/Pipelines/Main - Redis.yml" state="ignored;once-off-generated" />
+    <file relativePath="Solution Items/Pipelines/Main - SQL Express.yml" state="ignored;once-off-generated" />
+    <file relativePath="Solution Items/Pipelines/Main - SQL Server.yml" state="ignored;once-off-generated" />
+    <file relativePath="Solution Items/Pipelines/Main CI.yml" state="ignored;once-off-generated" />
+  </files>
+</outputFiles>

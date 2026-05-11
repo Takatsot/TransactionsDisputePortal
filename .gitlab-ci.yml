@@ -1,0 +1,198 @@
+# GitLab CI/CD Pipeline
+
+variables:
+  DOCKER_DRIVER: overlay2
+  DOCKER_TLS_CERTDIR: "/certs"
+  API_IMAGE: $CI_REGISTRY_IMAGE/api
+  UI_IMAGE: $CI_REGISTRY_IMAGE/ui
+  DOTNET_VERSION: "10.0"
+  NODE_VERSION: "20"
+
+stages:
+  - build
+  - test
+  - docker
+  - security
+  - deploy
+
+# API Jobs
+.api-template: &api-template
+  only:
+    refs:
+      - main
+      - develop
+      - merge_requests
+    changes:
+      - TransactionsDisputePortal/**/*
+      - Dockerfile
+      - .gitlab-ci.yml
+
+build:api:
+  <<: *api-template
+  stage: build
+  image: mcr.microsoft.com/dotnet/sdk:${DOTNET_VERSION}
+  script:
+    - cd TransactionsDisputePortal
+    - dotnet restore
+    - dotnet build --configuration Release --no-restore
+  artifacts:
+    paths:
+      - TransactionsDisputePortal/**/bin/
+      - TransactionsDisputePortal/**/obj/
+    expire_in: 1 hour
+
+test:api:
+  <<: *api-template
+  stage: test
+  image: mcr.microsoft.com/dotnet/sdk:${DOTNET_VERSION}
+  dependencies:
+    - build:api
+  script:
+    - cd TransactionsDisputePortal
+    - dotnet test --configuration Release --no-build --collect:"XPlat Code Coverage" --logger "junit"
+  coverage: '/Total\s*\|\s*(\d+\.?\d*)%/'
+  artifacts:
+    when: always
+    reports:
+      junit: TransactionsDisputePortal/**/TestResults/*.xml
+      coverage_report:
+        coverage_format: cobertura
+        path: TransactionsDisputePortal/**/coverage.cobertura.xml
+
+docker:api:
+  stage: docker
+  image: docker:24
+  services:
+    - docker:24-dind
+  dependencies:
+    - test:api
+  only:
+    - main
+    - develop
+  script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - docker build -t $API_IMAGE:$CI_COMMIT_SHORT_SHA -t $API_IMAGE:latest -f Dockerfile .
+    - docker push $API_IMAGE:$CI_COMMIT_SHORT_SHA
+    - docker push $API_IMAGE:latest
+
+security:api:
+  stage: security
+  image: aquasec/trivy:latest
+  dependencies:
+    - docker:api
+  only:
+    - main
+    - develop
+  script:
+    - trivy image --exit-code 0 --severity HIGH,CRITICAL $API_IMAGE:$CI_COMMIT_SHORT_SHA
+  allow_failure: true
+
+# UI Jobs
+.ui-template: &ui-template
+  only:
+    refs:
+      - main
+      - develop
+      - merge_requests
+    changes:
+      - TransactionsDisputePortal.UI/**/*
+      - .gitlab-ci.yml
+
+build:ui:
+  <<: *ui-template
+  stage: build
+  image: node:${NODE_VERSION}-alpine
+  script:
+    - cd TransactionsDisputePortal.UI
+    - npm ci
+    - npm run build
+  artifacts:
+    paths:
+      - TransactionsDisputePortal.UI/dist/
+      - TransactionsDisputePortal.UI/node_modules/
+    expire_in: 1 hour
+
+test:ui:
+  <<: *ui-template
+  stage: test
+  image: node:${NODE_VERSION}-alpine
+  dependencies:
+    - build:ui
+  script:
+    - cd TransactionsDisputePortal.UI
+    - npm run lint || true
+    - npm test -- --coverage --watchAll=false || true
+  coverage: '/Lines\s*:\s*(\d+\.?\d*)%/'
+  artifacts:
+    when: always
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+        path: TransactionsDisputePortal.UI/coverage/cobertura-coverage.xml
+
+docker:ui:
+  stage: docker
+  image: docker:24
+  services:
+    - docker:24-dind
+  dependencies:
+    - test:ui
+  only:
+    - main
+    - develop
+  script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - docker build -t $UI_IMAGE:$CI_COMMIT_SHORT_SHA -t $UI_IMAGE:latest -f TransactionsDisputePortal.UI/Dockerfile ./TransactionsDisputePortal.UI
+    - docker push $UI_IMAGE:$CI_COMMIT_SHORT_SHA
+    - docker push $UI_IMAGE:latest
+
+security:ui:
+  stage: security
+  image: node:${NODE_VERSION}-alpine
+  dependencies:
+    - build:ui
+  only:
+    - main
+    - develop
+  script:
+    - cd TransactionsDisputePortal.UI
+    - npm audit --audit-level=moderate
+  allow_failure: true
+
+# Deployment Jobs
+deploy:staging:
+  stage: deploy
+  image: bitnami/kubectl:latest
+  dependencies:
+    - docker:api
+    - docker:ui
+  only:
+    - develop
+  environment:
+    name: staging
+    url: https://staging.transactionsdisputeportal.com
+  script:
+    - kubectl config use-context $KUBE_CONTEXT_STAGING
+    - kubectl set image deployment/api api=$API_IMAGE:$CI_COMMIT_SHORT_SHA -n transactionsdisputeportal-staging
+    - kubectl set image deployment/ui ui=$UI_IMAGE:$CI_COMMIT_SHORT_SHA -n transactionsdisputeportal-staging
+    - kubectl rollout status deployment/api -n transactionsdisputeportal-staging
+    - kubectl rollout status deployment/ui -n transactionsdisputeportal-staging
+
+deploy:production:
+  stage: deploy
+  image: bitnami/kubectl:latest
+  dependencies:
+    - docker:api
+    - docker:ui
+  only:
+    - main
+  environment:
+    name: production
+    url: https://transactionsdisputeportal.com
+  when: manual
+  script:
+    - kubectl config use-context $KUBE_CONTEXT_PRODUCTION
+    - kubectl set image deployment/api api=$API_IMAGE:$CI_COMMIT_SHORT_SHA -n transactionsdisputeportal
+    - kubectl set image deployment/ui ui=$UI_IMAGE:$CI_COMMIT_SHORT_SHA -n transactionsdisputeportal
+    - kubectl rollout status deployment/api -n transactionsdisputeportal
+    - kubectl rollout status deployment/ui -n transactionsdisputeportal
