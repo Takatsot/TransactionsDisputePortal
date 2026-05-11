@@ -1,0 +1,65 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Documentation
+*.md
+LICENSE
+
+# Docker
+Dockerfile*
+docker-compose*
+.dockerignore
+
+# Build outputs
+**/bin/
+**/obj/
+**/out/
+**/publish/
+
+# IDE
+.vs/
+.vscode/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+.idea/
+
+# Test results
+[Tt]est[Rr]esult*/
+[Bb]uild[Ll]og.*
+*.trx
+*.coverage
+
+# NuGet
+*.nupkg
+*.snupkg
+**/packages/
+**/nuget.config
+
+# User-specific files
+appsettings.Development.json
+appsettings.*.json
+!appsettings.json
+
+# Node modules (if any)
+**/node_modules/
+**/npm-debug.log
+**/yarn-error.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Uploads
+**/uploads/*
+
+# Logs
+*.log
+logs/
+
+# Intent Architect
+**/.intent/
+intent/
