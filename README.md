@@ -65,7 +65,6 @@ This application follows **Clean Architecture** principles with clear separation
 - 📝 **Swagger/OpenAPI** - Auto-generated API documentation
 - 🗄️ **Entity Framework Core** - Code-first with migrations
 - 🎨 **Material-UI** - Modern, responsive React interface
-- 🇿🇦 **South African Context** - Local brands (Checkers, Takealot, TFG, Woolworths)
 
 ## 🚀 Getting Started
 
@@ -311,7 +310,6 @@ Potential improvements for production:
 - [ ] **Concurrency Tokens** - RowVersion for optimistic concurrency
 - [ ] **Integration Tests** - End-to-end API testing
 - [ ] **Result Pattern** - Functional error handling
-- [ ] **Docker Support** - Containerization ready
 
 
 ## 👤 Author
