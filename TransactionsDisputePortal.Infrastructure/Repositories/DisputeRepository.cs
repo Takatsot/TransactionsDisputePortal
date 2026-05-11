@@ -23,6 +23,12 @@ namespace TransactionsDisputePortal.Infrastructure.Repositories
         {
         }
 
+        protected override IQueryable<Dispute> CreateQuery()
+        {
+            // Always include Transaction navigation property for disputes
+            return base.CreateQuery().Include(d => d.Transaction);
+        }
+
         public async Task<Dispute?> FindByIdWithDetailsAsync(Guid id, CancellationToken cancellationToken = default)
         {
             return await _dbContext.Disputes

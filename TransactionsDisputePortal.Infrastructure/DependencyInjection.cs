@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using TransactionsDisputePortal.Application.Common.Interfaces;
+using TransactionsDisputePortal.Application.Common.Services;
 using TransactionsDisputePortal.Domain.Common.Interfaces;
 using TransactionsDisputePortal.Domain.Repositories;
 using TransactionsDisputePortal.Infrastructure.Persistence;
@@ -40,6 +41,9 @@ namespace TransactionsDisputePortal.Infrastructure
             
             // Register file storage service
             services.AddScoped<IFileStorageService, LocalFileStorageService>();
+            
+            // Register lookup service as singleton (loads data once and caches it)
+            services.AddSingleton<ILookupService, LookupService>();
             
             return services;
         }

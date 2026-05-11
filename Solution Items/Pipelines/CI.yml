@@ -1,0 +1,289 @@
+# ============================================================================
+# TransactionsDisputePortal - CI Pipeline
+# ============================================================================
+# Purpose: Build, test, and publish artifacts for both API and UI
+# Triggers: Automatically on push to main/develop branches
+# Outputs: Build artifacts including migration scripts
+# ============================================================================
+
+name: CI-$(Date:yy).$(Date:MM).$(Date:dd)$(Rev:rr)
+
+trigger:
+  branches:
+    include:
+    - main
+    - develop
+    - development
+    - hotfix
+  paths:
+    exclude:
+    - Solution Items/**/*
+    - '*.md'
+
+pr:
+  branches:
+    include:
+    - main
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  # Variable groups from Azure DevOps Library
+  - group: 'Deployment Variables'
+  - group: 'lib-config-transactionsdisputeportal'
+
+  # Application settings
+  - name: ApplicationName
+    value: 'transactionsdisputeportal'
+  - name: solution
+    value: 'TransactionsDisputePortal/TransactionsDisputePortal.sln'
+  
+  # .NET Configuration
+  - name: dotnetVersion
+    value: '10.0.x'
+  - name: infraProject
+    value: 'TransactionsDisputePortal.Infrastructure'
+  - name: apiProject
+    value: 'TransactionsDisputePortal.Api'
+  
+  # Node.js Configuration
+  - name: nodeVersion
+    value: '20.x'
+  - name: uiDirectory
+    value: 'TransactionsDisputePortal.UI'
+
+  # Branch-based configuration (auto-detects main vs develop)
+  - ${{ if or(eq(variables['Build.SourceBranch'], 'refs/heads/main'), contains(variables['Build.SourceBranch'], 'hotfix')) }}:
+    - name: buildConfiguration
+      value: 'Release'
+    - name: artifactName
+      value: 'main-drop'
+  - ${{ else }}:
+    - name: buildConfiguration
+      value: 'Debug'
+    - name: artifactName
+      value: 'dev-drop'
+
+stages:
+# ============================================================================
+# Stage 1: Build API
+# ============================================================================
+- stage: BuildAPI
+  displayName: 'Build API'
+  jobs:
+  - job: BuildAPI
+    displayName: 'Build .NET API'
+    steps:
+    # Setup .NET SDK
+    - task: UseDotNet@2
+      displayName: 'Install .NET $(dotnetVersion)'
+      inputs:
+        packageType: 'sdk'
+        version: $(dotnetVersion)
+    
+    # Restore NuGet packages
+    - task: DotNetCoreCLI@2
+      displayName: 'Restore packages'
+      inputs:
+        command: 'restore'
+        projects: '$(solution)'
+    
+    # Build the solution
+    - task: DotNetCoreCLI@2
+      displayName: 'Build solution ($(buildConfiguration))'
+      inputs:
+        command: 'build'
+        projects: '$(solution)'
+        arguments: '--configuration $(buildConfiguration) --no-restore'
+    
+    # Generate database migration scripts
+    - script: |
+        cd TransactionsDisputePortal/$(infraProject)
+        dotnet ef migrations script --idempotent \
+          --output $(Build.ArtifactStagingDirectory)/scripts/Migration.sql \
+          --project $(infraProject).csproj \
+          --startup-project ../$(apiProject)/$(apiProject).csproj
+      displayName: 'Generate migration scripts'
+      continueOnError: false
+
+# ============================================================================
+# Stage 2: Build UI
+# ============================================================================
+- stage: BuildUI
+  displayName: 'Build UI'
+  jobs:
+  - job: BuildUI
+    displayName: 'Build React UI'
+    steps:
+    # Setup Node.js
+    - task: NodeTool@0
+      displayName: 'Install Node.js $(nodeVersion)'
+      inputs:
+        versionSpec: $(nodeVersion)
+    
+    # Install dependencies
+    - task: Npm@1
+      displayName: 'npm ci (clean install)'
+      inputs:
+        command: 'ci'
+        workingDir: '$(uiDirectory)'
+    
+    # Run linting
+    - task: Npm@1
+      displayName: 'Run ESLint'
+      inputs:
+        command: 'custom'
+        workingDir: '$(uiDirectory)'
+        customCommand: 'run lint'
+      continueOnError: true
+
+# ============================================================================
+# Stage 3: Test
+# ============================================================================
+- stage: Test
+  displayName: 'Test'
+  dependsOn:
+  - BuildAPI
+  - BuildUI
+  jobs:
+  # API Tests
+  - job: TestAPI
+    displayName: 'Test API'
+    steps:
+    - task: UseDotNet@2
+      displayName: 'Install .NET $(dotnetVersion)'
+      inputs:
+        packageType: 'sdk'
+        version: $(dotnetVersion)
+    
+    - task: DotNetCoreCLI@2
+      displayName: 'Run unit tests'
+      inputs:
+        command: 'test'
+        projects: 'TransactionsDisputePortal/**/*Tests.csproj'
+        arguments: '--configuration $(buildConfiguration) --collect:"XPlat Code Coverage" --logger trx'
+        publishTestResults: true
+    
+    - task: PublishCodeCoverageResults@1
+      displayName: 'Publish coverage'
+      inputs:
+        codeCoverageTool: 'Cobertura'
+        summaryFileLocation: '$(Agent.TempDirectory)/**/*coverage.cobertura.xml'
+
+  # UI Tests
+  - job: TestUI
+    displayName: 'Test UI'
+    steps:
+    - task: NodeTool@0
+      displayName: 'Install Node.js $(nodeVersion)'
+      inputs:
+        versionSpec: $(nodeVersion)
+    
+    - task: Npm@1
+      displayName: 'npm ci'
+      inputs:
+        command: 'ci'
+        workingDir: '$(uiDirectory)'
+    
+    - task: Npm@1
+      displayName: 'Run tests with coverage'
+      inputs:
+        command: 'custom'
+        workingDir: '$(uiDirectory)'
+        customCommand: 'test -- --coverage --watchAll=false'
+      continueOnError: true
+    
+    - task: PublishCodeCoverageResults@1
+      displayName: 'Publish coverage'
+      inputs:
+        codeCoverageTool: 'Cobertura'
+        summaryFileLocation: '$(uiDirectory)/coverage/cobertura-coverage.xml'
+      condition: succeededOrFailed()
+    
+    - task: Npm@1
+      displayName: 'Security audit'
+      inputs:
+        command: 'custom'
+        workingDir: '$(uiDirectory)'
+        customCommand: 'audit --audit-level=moderate'
+      continueOnError: true
+
+# ============================================================================
+# Stage 4: Publish Artifacts
+# ============================================================================
+- stage: Publish
+  displayName: 'Publish'
+  dependsOn: Test
+  jobs:
+  # Publish API
+  - job: PublishAPI
+    displayName: 'Publish API'
+    steps:
+    - task: UseDotNet@2
+      displayName: 'Install .NET $(dotnetVersion)'
+      inputs:
+        packageType: 'sdk'
+        version: $(dotnetVersion)
+    
+    # Publish API application
+    - task: DotNetCoreCLI@2
+      displayName: 'Publish API'
+      inputs:
+        command: 'publish'
+        publishWebProjects: false
+        projects: 'TransactionsDisputePortal/$(apiProject)/$(apiProject).csproj'
+        arguments: '--configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)/api'
+        zipAfterPublish: false
+    
+    # Generate migration scripts for deployment
+    - script: |
+        cd TransactionsDisputePortal/$(infraProject)
+        dotnet ef migrations script --idempotent \
+          --output $(Build.ArtifactStagingDirectory)/scripts/Migration.sql \
+          --project $(infraProject).csproj \
+          --startup-project ../$(apiProject)/$(apiProject).csproj
+      displayName: 'Generate migration scripts'
+      continueOnError: false
+    
+    # Publish artifacts
+    - task: PublishBuildArtifacts@1
+      displayName: 'Publish artifacts'
+      inputs:
+        PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+        ArtifactName: '$(artifactName)-api'
+        publishLocation: 'Container'
+
+  # Publish UI
+  - job: PublishUI
+    displayName: 'Publish UI'
+    steps:
+    - task: NodeTool@0
+      displayName: 'Install Node.js $(nodeVersion)'
+      inputs:
+        versionSpec: $(nodeVersion)
+    
+    - task: Npm@1
+      displayName: 'npm ci'
+      inputs:
+        command: 'ci'
+        workingDir: '$(uiDirectory)'
+    
+    # Build UI for production
+    - task: Npm@1
+      displayName: 'Build UI'
+      inputs:
+        command: 'custom'
+        workingDir: '$(uiDirectory)'
+        customCommand: 'run build'
+      env:
+        VITE_API_URL: $(VITE_API_URL)
+    
+    # Publish UI artifacts
+    - task: PublishBuildArtifacts@1
+      displayName: 'Publish artifacts'
+      inputs:
+        PathtoPublish: '$(uiDirectory)/dist'
+        ArtifactName: '$(artifactName)-ui'
+        publishLocation: 'Container'
+

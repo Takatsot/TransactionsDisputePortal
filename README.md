@@ -65,7 +65,6 @@ This application follows **Clean Architecture** principles with clear separation
 - 📝 **Swagger/OpenAPI** - Auto-generated API documentation
 - 🗄️ **Entity Framework Core** - Code-first with migrations
 - 🎨 **Material-UI** - Modern, responsive React interface
-- 🇿🇦 **South African Context** - Local brands (Checkers, Takealot, TFG, Woolworths)
 
 ## 🚀 Getting Started
 
@@ -161,8 +160,8 @@ The API exposes health check endpoints for monitoring:
 | Endpoint | Purpose | Status Codes |
 |----------|---------|--------------|
 | `/health` | Overall system health | 200 (Healthy), 503 (Unhealthy) |
-| `/health/ready` | Readiness probe (K8s) | 200 (Ready), 503 (Not Ready) |
-| `/health/live` | Liveness probe (K8s) | 200 (Alive) |
+| `/Isready` | Readiness probe (K8s) | 200 (Ready), 503 (Not Ready) |
+| `/Islive` | Liveness probe (K8s) | 200 (Alive) |
 
 Health checks monitor:
 - ✅ Database connectivity (SQL Server)
@@ -311,83 +310,12 @@ Potential improvements for production:
 - [ ] **Concurrency Tokens** - RowVersion for optimistic concurrency
 - [ ] **Integration Tests** - End-to-end API testing
 - [ ] **Result Pattern** - Functional error handling
-- [ ] **Docker Support** - Containerization ready
 
-## 🎯 Key Takeaways for Interviewers
-
-This project demonstrates:
-
-1. **Clean Architecture** - Proper separation of concerns, dependency inversion
-2. **CQRS & MediatR** - Scalable command/query separation  
-3. **Domain-Driven Design** - Rich domain models with business logic
-4. **Test-Driven Development** - Unit tests for domain logic (23 passing tests)
-5. **Modern .NET** - Latest C# features, async/await patterns
-6. **API Best Practices** - RESTful design, proper HTTP status codes, validation
-7. **Security** - JWT authentication, PBKDF2 password hashing
-8. **DevOps Awareness** - Health checks, structured logging (Serilog)
-9. **UI/UX** - Responsive design, modern React patterns, Material-UI
-10. **Code Quality** - Clean code, SOLID principles, comprehensive documentation
-
-### Technical Interview Discussion Points
-
-**Architecture & Design:**
-- Why did you choose Clean Architecture over other patterns?
-- How would you handle domain events for cross-aggregate communication?
-- What's your strategy for handling eventual consistency?
-
-**Scalability:**
-- How would you scale read vs write operations differently?
-- What caching strategy would you implement?
-- How would you handle high-volume dispute processing?
-
-**Performance:**
-- Database indexing strategy (show: IX_Disputes_TransactionId)
-- Query optimization techniques
-- N+1 problem prevention
-
-**Security:**
-- Additional measures needed (refresh tokens, rate limiting, MFA)
-- How to prevent dispute fraud?
-- API security best practices
-
-**Monitoring & Observability:**
-- Application Insights / OpenTelemetry integration
-- What metrics would you track?
-- Alerting strategy
-
-**Deployment:**
-- CI/CD pipeline design
-- Blue-green vs canary deployments
-- Database migration strategy
-
-**Testing:**
-- Integration test strategy
-- E2E test approach (Playwright)
-- How to test external dependencies?
-
-**Error Handling:**
-- Global exception handling middleware
-- Result pattern vs exceptions
-- Error logging and tracking
-
-**Concurrency:**
-- Optimistic vs pessimistic locking
-- When to use RowVersion?
-- Handling concurrent dispute updates
 
 ## 👤 Author
 
-**Sifiso (Thabo Kapiteni)**  
+**Sifiso Tsukulu**  
 Senior Software Engineer
-
----
-
-## 📝 Notes
-
-- This project uses **South African merchant brands** (Takealot, Checkers, Woolworths, TFG, etc.)
-- Database is automatically seeded with test data on first run
-- All timestamps are in UTC
-- Currency is ZAR (South African Rand)
 
 ## 📚 Documentation
 
